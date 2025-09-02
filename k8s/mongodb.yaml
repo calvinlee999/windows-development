@@ -4,8 +4,8 @@ metadata:
   name: mongodb-config
   namespace: local-dev
 data:
-  MONGO_INITDB_ROOT_USERNAME: devuser
-  MONGO_INITDB_ROOT_PASSWORD: devpass
+  MONGO_INITDB_ROOT_USERNAME: admin
+  MONGO_INITDB_ROOT_PASSWORD: admin123
   MONGO_INITDB_DATABASE: devdb
 ---
 apiVersion: v1
@@ -122,7 +122,7 @@ spec:
         - name: ME_CONFIG_MONGODB_ADMINPASSWORD
           value: devpass
         - name: ME_CONFIG_MONGODB_URL
-          value: mongodb://devuser:devpass@mongodb-service:27017/
+          value: mongodb://admin:admin123@mongodb-service:27017/
         - name: ME_CONFIG_BASICAUTH_USERNAME
           value: admin
         - name: ME_CONFIG_BASICAUTH_PASSWORD
