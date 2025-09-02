@@ -14,12 +14,12 @@ This project provides a complete local development infrastructure using Docker C
 ###  **Active Services**
 | Service | Status | Port | Management UI | Credentials |
 |---------|--------|------|---------------|-------------|
-| **LocalStack (AWS Services)** |  Running | 3000 | Web UI Available | - |
+| **LocalStack (AWS Services)** |  Running | 3000 | Dashboard: :8091/localstack | API endpoints only |
 | **AWS SAM CLI (Node.js 18)** |  Running | 3001 | Container Ready | - |
 | **Nginx Microservices Gateway** |  Running | 8090/8091 | :8091 | - |
 | **PostgreSQL** |  Available | 5432 | :5050 | devuser/devpass |
 | **MongoDB** |  Available | 27017 | :8081 | admin/admin123 |
-| **Redis** |  Available | 6379 | :8082 | devpass |
+| **Redis** |  Available | 6379 | :8082 | Password: devpass, Web UI: admin/admin123 |
 | **Apache Kafka** |  Available | 9092 | :9021 | - |
 | **RabbitMQ** |  Available | 5672 | :15672 | devuser/devpass |
 
@@ -32,10 +32,11 @@ This project provides a complete local development infrastructure using Docker C
  Services: S3, DynamoDB, Lambda, SageMaker, Bedrock, CloudFront
  Network: Integrated with infrastructure network
  Status: Both containers healthy and accessible
+ Dashboard: Custom web interface at :8091/localstack
 `
 
 **LocalStack Available Services:**
-- **S3**: Object storage simulation
+- **S3**: Object storage simulation ( Tested - bucket creation works)
 - **DynamoDB**: NoSQL database simulation  
 - **Lambda**: Serverless function execution
 - **SageMaker**: ML model development
@@ -43,6 +44,12 @@ This project provides a complete local development infrastructure using Docker C
 - **CloudFront**: CDN simulation
 - **API Gateway**: REST/GraphQL APIs
 - **And 50+ more AWS services**
+
+**LocalStack Access:**
+- **API Endpoints**: http://localhost:3000
+- **Health Check**: http://localhost:3000/_localstack/health
+- **Service Info**: http://localhost:3000/_localstack/info
+- **Web Dashboard**: http://localhost:8091/localstack (Custom UI)
 
 ###  **Nginx Microservices Gateway (Production Ready)**
 `
@@ -58,6 +65,7 @@ This project provides a complete local development infrastructure using Docker C
 - **Admin Interface**: http://localhost:8091
 - **Health Check**: http://localhost:8090/health
 - **Gateway Status**: http://localhost:8091/gateway/status
+- **LocalStack Dashboard**: http://localhost:8091/localstack
 
 ###  **Docker Infrastructure**
 - **Network**: local-infrastructure_default bridge
@@ -117,19 +125,21 @@ cd windows-development
 
 #### PostgreSQL
 - **Connection**: postgresql://devuser:devpass@localhost:5432/devdb
-- **Admin UI**: http://localhost:5050 (admin@dev.local / admin)
+- **Admin UI**: http://localhost:5050 (cloudycat999@gmail.com / admin123)
 - **Multiple DBs**: devdb, testdb, apidb, microservices_db
 - **Health Check**: Built-in monitoring
 
 #### MongoDB
 - **Connection**: mongodb://admin:admin123@localhost:27017
 - **Admin UI**: http://localhost:8081
-- **Credentials**: admin / admin123
+- **Web UI Credentials**: admin / admin123
 - **Collections**: Auto-created on demand
 
 #### Redis
 - **Connection**: redis://:devpass@localhost:6379
+- **Password**: devpass (no username required)
 - **Admin UI**: http://localhost:8082
+- **Web UI Credentials**: admin / admin123
 - **Use Cases**: Caching, sessions, pub/sub
 
 ###  **Message Brokers**
@@ -143,6 +153,7 @@ cd windows-development
 #### RabbitMQ
 - **AMQP URL**: amqp://devuser:devpass@localhost:5672/dev
 - **Management UI**: http://localhost:15672
+- **Credentials**: devuser / devpass
 - **Queues**: Auto-created, persistent storage
 
 ###  **API Gateways & AWS Simulation**
@@ -155,6 +166,7 @@ cd windows-development
 - **Lambda**: Local function execution
 - **SageMaker**: ML development environment
 - **Bedrock**: AI services simulation
+- **Dashboard**: http://localhost:8091/localstack
 
 #### AWS SAM CLI (Official)
 - **Container**: aws-sam-nodejs18 (Node.js 18)
@@ -195,6 +207,7 @@ cd windows-development
 
  All 8 services are operational
  Admin UIs: All accessible
+ Credentials: All validated
 `
 
 ### AWS Services Testing
@@ -207,6 +220,18 @@ docker exec -it aws-sam-nodejs18 sam --version
 
 # Test Nginx Gateway
 curl http://localhost:8090/health
+
+# Access LocalStack Dashboard
+# Open http://localhost:8091/localstack in browser
+`
+
+### Redis Connection Testing
+`powershell
+# Test Redis CLI connection
+docker exec -it dev-redis redis-cli -a devpass ping
+
+# Test Redis Commander Web UI
+# Open http://localhost:8082 (admin/admin123)
 `
 
 ##  **Development Usage**
@@ -255,6 +280,22 @@ const dynamodb = new AWS.DynamoDB({
 });
 `
 
+### Redis Development
+`javascript
+// Node.js Redis connection
+const redis = require('redis');
+const client = redis.createClient({
+  host: 'localhost',
+  port: 6379,
+  password: 'devpass'
+});
+
+// Test connection
+client.ping((err, result) => {
+  console.log('Redis ping:', result); // Should return 'PONG'
+});
+`
+
 ### Microservices with Nginx Gateway
 `javascript
 // Frontend API calls through gateway
@@ -297,6 +338,7 @@ docker stats
 # View service logs
 docker-compose logs -f localstack
 docker logs nginx-gateway
+docker logs dev-redis-commander
 `
 
 ##  **Architecture Overview**
@@ -317,7 +359,7 @@ docker logs nginx-gateway
    (Port 5432)      (Port 9092)     SAM CLI (Port 3001)       
   MongoDB         RabbitMQ        S3, DynamoDB, Lambda      
    (Port 27017)     (Port 5672)     SageMaker, Bedrock        
-  Redis                                                       
+  Redis                            Dashboard (:8091/localstack) 
    (Port 6379)                                                 
 
 `
@@ -352,13 +394,28 @@ docker restart container-name
 #### LocalStack Issues
 `powershell
 # Check LocalStack health
-curl http://localhost:3000/health
+curl http://localhost:3000/_localstack/health
 
 # View LocalStack logs
 docker logs aws-api-simulator
 
 # Reset LocalStack data
 docker restart aws-api-simulator
+
+# Access LocalStack Dashboard
+# Open http://localhost:8091/localstack
+`
+
+#### Redis Connection Issues
+`powershell
+# Test Redis directly
+docker exec -it dev-redis redis-cli -a devpass ping
+
+# Check Redis Commander logs
+docker logs dev-redis-commander
+
+# Access Redis Commander
+# Open http://localhost:8082 (admin/admin123)
 `
 
 ### Performance Optimization
@@ -379,6 +436,14 @@ docker system prune -f
 - Default passwords are for development only
 - No SSL/TLS encryption configured
 - Open network policies for development convenience
+
+### Credentials Summary
+- **PostgreSQL**: devuser/devpass
+- **MongoDB**: admin/admin123  
+- **Redis**: password devpass (no username)
+- **Redis Commander**: admin/admin123
+- **RabbitMQ**: devuser/devpass
+- **PgAdmin**: cloudycat999@gmail.com/admin123
 
 ### Secure Development Practices
 - Use environment variables for configuration
@@ -404,21 +469,24 @@ docker system prune -f
 # 3. Commit changes
 git add .
 git commit -m "feat: enhance infrastructure setup"
-git push origin main
+git push origin master
 `
 
 ##  **Changelog**
 
 ### September 2025 - Major Infrastructure Update
--  **LocalStack Integration**: Complete AWS services simulation
+-  **LocalStack Integration**: Complete AWS services simulation with custom dashboard
 -  **AWS SAM CLI**: Official Node.js 18 serverless development
 -  **Nginx Gateway**: Production-ready microservices routing
 -  **Stable Ports**: Fixed port configuration eliminates conflicts
 -  **Ultra-Stable Setup**: Persistent volumes and restart policies
 -  **MongoDB Auth**: Fixed admin/admin123 credentials
+-  **Redis Configuration**: Clarified password-only authentication (devpass)
 -  **Email Integration**: cloudycat999@gmail.com configuration
 -  **32GB System**: Optimized for high-performance development
 -  **Management Scripts**: Complete PowerShell automation suite
+-  **LocalStack Dashboard**: Custom web interface at :8091/localstack
+-  **Credential Documentation**: Complete authentication guide
 
 ### Previous Versions
 - Database services with management UIs
@@ -444,4 +512,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 **System Specs**: Intel Core Ultra 9 185H (22 cores), 32GB RAM, 3.4+ TB Storage
 **Infrastructure Email**: cloudycat999@gmail.com
-**Last Updated**: September 2, 2025
+**Last Updated**: September 2, 2025 - Added LocalStack Dashboard & Redis Credentials
