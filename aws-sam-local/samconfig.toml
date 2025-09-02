@@ -1,0 +1,7 @@
+﻿version = 0.1
+[default]
+[default.local]
+[default.local.start_api]
+skip_pull_image = true
+warm_containers = "EAGER"
+parameter_overrides = []

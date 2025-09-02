@@ -1,0 +1,46 @@
+﻿# Sample API configuration for Flex Gateway Local Mode
+# This demonstrates basic API routing and policy application
+
+apiVersion: gateway.mulesoft.com/v1alpha1
+kind: ApiInstance
+metadata:
+  name: "sample-api"
+  namespace: "default"
+spec:
+  # API definition
+  api:
+    consumerEndpoint:
+      address: "http://0.0.0.0:8080"
+      path: "/api/v1"
+    services:
+      - address: "http://httpbin.org"
+        path: "/"
+        
+  # Basic policies
+  policies:
+    - policyRef:
+        name: "http-basic-authentication-policy"
+      config:
+        username: "admin"
+        password: "admin123"
+        
+    - policyRef:
+        name: "rate-limiting-policy"  
+      config:
+        rateLimits:
+          - maximumRequests: 100
+            timePeriodInMilliseconds: 60000
+            
+    - policyRef:
+        name: "cors-policy"
+      config:
+        allowOrigins:
+          - "*"
+        allowMethods:
+          - "GET"
+          - "POST"
+          - "PUT"
+          - "DELETE"
+        allowHeaders:
+          - "Content-Type"
+          - "Authorization"

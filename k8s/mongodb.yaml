@@ -1,0 +1,146 @@
+﻿apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongodb-config
+  namespace: local-dev
+data:
+  MONGO_INITDB_ROOT_USERNAME: devuser
+  MONGO_INITDB_ROOT_PASSWORD: devpass
+  MONGO_INITDB_DATABASE: devdb
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongodb-pvc
+  namespace: local-dev
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongodb-config-pvc
+  namespace: local-dev
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb
+  namespace: local-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+    metadata:
+      labels:
+        app: mongodb
+    spec:
+      containers:
+      - name: mongodb
+        image: mongo:7.0
+        envFrom:
+        - configMapRef:
+            name: mongodb-config
+        ports:
+        - containerPort: 27017
+        volumeMounts:
+        - name: mongodb-storage
+          mountPath: /data/db
+        - name: mongodb-config-storage
+          mountPath: /data/configdb
+        readinessProbe:
+          exec:
+            command:
+            - mongosh
+            - --eval
+            - db.adminCommand('ping')
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        livenessProbe:
+          exec:
+            command:
+            - mongosh
+            - --eval
+            - db.adminCommand('ping')
+          initialDelaySeconds: 30
+          periodSeconds: 30
+      volumes:
+      - name: mongodb-storage
+        persistentVolumeClaim:
+          claimName: mongodb-pvc
+      - name: mongodb-config-storage
+        persistentVolumeClaim:
+          claimName: mongodb-config-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb-service
+  namespace: local-dev
+spec:
+  selector:
+    app: mongodb
+  ports:
+  - port: 27017
+    targetPort: 27017
+    nodePort: 30017
+  type: NodePort
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo-express
+  namespace: local-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongo-express
+  template:
+    metadata:
+      labels:
+        app: mongo-express
+    spec:
+      containers:
+      - name: mongo-express
+        image: mongo-express:latest
+        env:
+        - name: ME_CONFIG_MONGODB_ADMINUSERNAME
+          value: devuser
+        - name: ME_CONFIG_MONGODB_ADMINPASSWORD
+          value: devpass
+        - name: ME_CONFIG_MONGODB_URL
+          value: mongodb://devuser:devpass@mongodb-service:27017/
+        - name: ME_CONFIG_BASICAUTH_USERNAME
+          value: admin
+        - name: ME_CONFIG_BASICAUTH_PASSWORD
+          value: admin123
+        ports:
+        - containerPort: 8081
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo-express-service
+  namespace: local-dev
+spec:
+  selector:
+    app: mongo-express
+  ports:
+  - port: 8081
+    targetPort: 8081
+    nodePort: 30083
+  type: NodePort

@@ -1,0 +1,11 @@
+﻿apiVersion: gateway.mulesoft.com/v1alpha1
+kind: ApiInstance
+metadata:
+  name: httpbin-api
+  namespace: default
+spec:
+  address: http://0.0.0.0:8080/httpbin
+  services:
+    - address: https://httpbin.org
+      path: /
+  policies: []

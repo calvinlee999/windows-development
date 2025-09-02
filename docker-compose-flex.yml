@@ -1,0 +1,23 @@
+﻿version: '3.8'
+
+services:
+  flex-gateway:
+    image: mulesoft/flex-gateway:latest
+    container_name: local-flex-gateway
+    restart: unless-stopped
+    environment:
+      FLEX_GATEWAY_MODE: "local"
+      FLEX_GATEWAY_LOG_LEVEL: "INFO"
+    ports:
+      - "8090:8080"   # API Gateway port  
+      - "8091:8081"   # Management/Health check port
+    volumes:
+      - ./flex-gateway/config:/opt/anypoint/flex-gateway/conf:ro
+    networks:
+      - default
+    healthcheck:
+      test: ["CMD", "pgrep", "flex-agent"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
