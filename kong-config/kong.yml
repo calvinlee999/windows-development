@@ -1,0 +1,45 @@
+﻿_format_version: "3.0"
+_transform: true
+
+services:
+  - name: postgres-service
+    url: http://dev-postgres:5432
+    tags:
+      - dev
+  - name: mongodb-service  
+    url: http://dev-mongodb:27017
+    tags:
+      - dev
+  - name: redis-service
+    url: http://dev-redis:6379
+    tags:
+      - dev
+
+routes:
+  - name: postgres-route
+    service: postgres-service
+    paths:
+      - /postgres
+  - name: mongodb-route
+    service: mongodb-service
+    paths:
+      - /mongodb
+  - name: redis-route
+    service: redis-service
+    paths:
+      - /redis
+
+plugins:
+  - name: cors
+    config:
+      origins:
+        - "*"
+      methods:
+        - GET
+        - POST
+        - PUT
+        - DELETE
+      headers:
+        - Accept
+        - Content-Type
+        - Authorization
